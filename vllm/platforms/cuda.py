@@ -3,6 +3,7 @@
 """Code inside this file can safely assume cuda platform, e.g. importing
 pynvml. However, it should not initialize cuda context.
 """
+from __future__ import annotations
 
 import os
 from collections.abc import Callable
