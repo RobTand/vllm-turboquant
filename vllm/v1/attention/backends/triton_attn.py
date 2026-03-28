@@ -61,6 +61,7 @@ from vllm.v1.attention.ops.turboquant_kv_cache import (
 from vllm.v1.attention.ops.turboquant_metadata import (
     TurboQuantLayerMetadata,
     TurboQuantMetadata,
+    build_default_turboquant_metadata,
     discover_turboquant_metadata_path,
     load_turboquant_metadata,
 )
@@ -578,19 +579,31 @@ class TritonAttentionImpl(AttentionImpl):
                     turboquant_metadata_path,
                 )
                 if resolved_metadata_path is None:
-                    raise ValueError(
-                        "TurboQuant KV cache requires metadata. Pass "
-                        "`turboquant_metadata_path` or place `turboquant_kv.json` "
-                        "under the local model path."
+                    # No calibrated metadata — use default (first N dims as
+                    # high-precision group).  Quality is slightly lower than
+                    # calibrated metadata but avoids the setup step.
+                    logger.warning_once(
+                        "No TurboQuant metadata found; using default outlier "
+                        "indices.  For best quality, run "
+                        "generate_turboquant_metadata.py and pass "
+                        "--turboquant-metadata-path.",
                     )
-                self._turboquant_metadata = load_turboquant_metadata(
-                    resolved_metadata_path
-                )
-                logger.info_once(
-                    "Resolved TurboQuant metadata from %s.",
-                    resolved_metadata_path,
-                    scope="local",
-                )
+                    self._turboquant_metadata = build_default_turboquant_metadata(
+                        recipe=self.kv_cache_dtype,
+                        head_size=self.head_size,
+                        num_kv_heads=self.num_kv_heads,
+                        layer_names=[turboquant_layer_name],
+                        model_name=turboquant_model_name,
+                    )
+                else:
+                    self._turboquant_metadata = load_turboquant_metadata(
+                        resolved_metadata_path
+                    )
+                    logger.info_once(
+                        "Resolved TurboQuant metadata from %s.",
+                        resolved_metadata_path,
+                        scope="local",
+                    )
             if self._turboquant_metadata.recipe != self.kv_cache_dtype:
                 raise ValueError(
                     "TurboQuant metadata recipe does not match kv_cache_dtype: "
