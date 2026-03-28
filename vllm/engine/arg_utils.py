@@ -579,6 +579,8 @@ class EngineArgs:
     attention_backend: AttentionBackendEnum | None = AttentionConfig.backend
 
     calculate_kv_scales: bool = CacheConfig.calculate_kv_scales
+    enable_turboquant: bool = CacheConfig.enable_turboquant
+    turboquant_metadata_path: str | None = CacheConfig.turboquant_metadata_path
     mamba_cache_dtype: MambaDType = CacheConfig.mamba_cache_dtype
     mamba_ssm_cache_dtype: MambaDType = CacheConfig.mamba_ssm_cache_dtype
     mamba_block_size: int | None = get_field(CacheConfig, "mamba_block_size")
@@ -973,6 +975,13 @@ class EngineArgs:
         )
         cache_group.add_argument(
             "--calculate-kv-scales", **cache_kwargs["calculate_kv_scales"]
+        )
+        cache_group.add_argument(
+            "--enable-turboquant", **cache_kwargs["enable_turboquant"]
+        )
+        cache_group.add_argument(
+            "--turboquant-metadata-path",
+            **cache_kwargs["turboquant_metadata_path"],
         )
         cache_group.add_argument(
             "--kv-sharing-fast-prefill", **cache_kwargs["kv_sharing_fast_prefill"]
@@ -1520,6 +1529,8 @@ class EngineArgs:
             enable_prefix_caching=self.enable_prefix_caching,
             prefix_caching_hash_algo=self.prefix_caching_hash_algo,
             calculate_kv_scales=self.calculate_kv_scales,
+            enable_turboquant=self.enable_turboquant,
+            turboquant_metadata_path=self.turboquant_metadata_path,
             kv_sharing_fast_prefill=self.kv_sharing_fast_prefill,
             mamba_cache_dtype=self.mamba_cache_dtype,
             mamba_ssm_cache_dtype=self.mamba_ssm_cache_dtype,
