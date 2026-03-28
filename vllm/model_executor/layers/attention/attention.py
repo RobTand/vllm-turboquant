@@ -34,6 +34,7 @@ from vllm.v1.attention.backend import (
     AttentionType,
 )
 from vllm.v1.attention.backends.registry import AttentionBackendEnum
+from vllm.v1.attention.ops.turboquant_kv_cache import is_turboquant_kv_cache
 from vllm.v1.attention.selector import get_attn_backend
 from vllm.v1.kv_cache_interface import (
     FullAttentionSpec,
@@ -291,6 +292,15 @@ class Attention(nn.Module, AttentionLayerBase):
         self.use_alibi_sqrt = bool(use_alibi_sqrt)
         if backend_supports_alibi_sqrt:
             extra_impl_args["use_alibi_sqrt"] = self.use_alibi_sqrt
+        if is_turboquant_kv_cache(kv_cache_dtype):
+            extra_impl_args["turboquant_layer_name"] = prefix
+            extra_impl_args["turboquant_model_name"] = (
+                vllm_config.model_config.model if vllm_config else None
+            )
+            extra_impl_args["turboquant_metadata_path"] = (
+                None if cache_config is None
+                else cache_config.turboquant_metadata_path
+            )
         # prefix caching + batch invariance is currently not supported for
         # FLASHINFER and TRITON_MLA.
         if (
